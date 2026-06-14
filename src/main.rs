@@ -55,7 +55,19 @@ fn sorted_chars(s: &str) -> Vec<char> {
 }
 
 fn has_wildcard(letters: &str) -> bool {
-    letters.contains('?') || letters.contains('*')
+    letters.contains('?') || letters.contains('*') || letters.contains('-')
+}
+
+/// Returns true if every character in `word` can be matched to a distinct character in `base`.
+fn is_submultiset(word: &str, base: &[char]) -> bool {
+    let mut remaining = base.to_vec();
+    for ch in word.chars() {
+        match remaining.iter().position(|&c| c == ch) {
+            Some(pos) => { remaining.remove(pos); }
+            None => return false,
+        }
+    }
+    true
 }
 
 /// Positional match: `?` accepts any char at that position; letters must match exactly.
@@ -96,7 +108,21 @@ fn find_anagrams(letters: &str, dict_path: &Path) -> Result<Vec<String>, String>
     let lower = letters.to_lowercase();
     let target_len = letters.chars().count();
 
-    let anagrams = if lower.contains('*') {
+    let n_dash = lower.chars().filter(|&c| c == '-').count();
+
+    let anagrams = if n_dash > 0 {
+        // Remove n_dash letters from the pool and find all anagrams of any resulting subset.
+        let base: Vec<char> = lower.chars().filter(|&c| c != '-').collect();
+        let target_len = base.len().saturating_sub(n_dash);
+        content
+            .lines()
+            .filter(|word| {
+                word.chars().count() == target_len
+                    && is_submultiset(&word.to_lowercase(), &base)
+            })
+            .map(str::to_owned)
+            .collect()
+    } else if lower.contains('*') {
         // Non-positional: letters must appear somewhere in the word; * and ? are free slots.
         let required: Vec<char> = lower.chars().filter(|&c| c != '?' && c != '*').collect();
         content
