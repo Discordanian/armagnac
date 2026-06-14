@@ -54,22 +54,57 @@ fn sorted_chars(s: &str) -> Vec<char> {
     chars
 }
 
+fn has_wildcard(letters: &str) -> bool {
+    letters.contains('?')
+}
+
+/// Returns true if `word` matches `pattern` positionally.
+/// `?` in the pattern matches any single character; all other characters must match exactly.
+fn matches_pattern(word: &str, pattern: &str) -> bool {
+    let mut wc = word.chars();
+    let mut pc = pattern.chars();
+    loop {
+        match (wc.next(), pc.next()) {
+            (Some(w), Some('?')) => { let _ = w; }
+            (Some(w), Some(p)) => {
+                if w != p {
+                    return false;
+                }
+            }
+            (None, None) => return true,
+            _ => return false,
+        }
+    }
+}
+
 fn find_anagrams(letters: &str, dict_path: &Path) -> Result<Vec<String>, String> {
     let content = fs::read_to_string(dict_path)
         .map_err(|e| format!("failed to read dictionary {}: {e}", dict_path.display()))?;
 
-    let key = sorted_chars(&letters.to_lowercase());
+    let lower = letters.to_lowercase();
+    let target_len = letters.chars().count();
 
-    let anagrams = content
-        .lines()
-        .filter(|word| {
-            // Skip the input word itself and words of a different length
-            word.len() == letters.len()
-                && word.to_lowercase() != letters.to_lowercase()
-                && sorted_chars(&word.to_lowercase()) == key
-        })
-        .map(str::to_owned)
-        .collect();
+    let anagrams = if has_wildcard(letters) {
+        content
+            .lines()
+            .filter(|word| {
+                word.chars().count() == target_len
+                    && matches_pattern(&word.to_lowercase(), &lower)
+            })
+            .map(str::to_owned)
+            .collect()
+    } else {
+        let key = sorted_chars(&lower);
+        content
+            .lines()
+            .filter(|word| {
+                word.chars().count() == target_len
+                    && word.to_lowercase() != lower
+                    && sorted_chars(&word.to_lowercase()) == key
+            })
+            .map(str::to_owned)
+            .collect()
+    };
 
     Ok(anagrams)
 }
@@ -147,12 +182,15 @@ fn main() {
 
     if anagrams.is_empty() {
         println!("No anagrams found for \"{}\".", args.letters);
-        println!("All letter combinations:");
-        let permutations = all_permutations(&args.letters);
-        print_columns(&permutations);
+        if !has_wildcard(&args.letters) {
+            println!("All letter combinations:");
+            let permutations = all_permutations(&args.letters);
+            print_columns(&permutations);
+        }
     } else {
         anagrams.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()));
-        let anagrams: Vec<String> = anagrams.iter().map(|w| w.to_lowercase()).collect();
+        let mut anagrams: Vec<String> = anagrams.iter().map(|w| w.to_lowercase()).collect();
+        anagrams.dedup();
         print_columns(&anagrams);
     }
 }
