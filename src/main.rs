@@ -55,17 +55,16 @@ fn sorted_chars(s: &str) -> Vec<char> {
 }
 
 fn has_wildcard(letters: &str) -> bool {
-    letters.contains('?')
+    letters.contains('?') || letters.contains('*')
 }
 
-/// Returns true if `word` matches `pattern` positionally.
-/// `?` in the pattern matches any single character; all other characters must match exactly.
-fn matches_pattern(word: &str, pattern: &str) -> bool {
+/// Positional match: `?` accepts any char at that position; letters must match exactly.
+fn matches_positional(word: &str, pattern: &str) -> bool {
     let mut wc = word.chars();
     let mut pc = pattern.chars();
     loop {
         match (wc.next(), pc.next()) {
-            (Some(w), Some('?')) => { let _ = w; }
+            (Some(_), Some('?')) => {}
             (Some(w), Some(p)) => {
                 if w != p {
                     return false;
@@ -77,6 +76,19 @@ fn matches_pattern(word: &str, pattern: &str) -> bool {
     }
 }
 
+/// Non-positional match: the word must contain every required char (multiset).
+/// `?` and `*` in the pattern both act as free-char wildcards that consume one slot each.
+fn matches_nonpositional(word: &str, required: &[char]) -> bool {
+    let mut remaining: Vec<char> = word.chars().collect();
+    for &ch in required {
+        match remaining.iter().position(|&c| c == ch) {
+            Some(pos) => { remaining.remove(pos); }
+            None => return false,
+        }
+    }
+    true
+}
+
 fn find_anagrams(letters: &str, dict_path: &Path) -> Result<Vec<String>, String> {
     let content = fs::read_to_string(dict_path)
         .map_err(|e| format!("failed to read dictionary {}: {e}", dict_path.display()))?;
@@ -84,16 +96,29 @@ fn find_anagrams(letters: &str, dict_path: &Path) -> Result<Vec<String>, String>
     let lower = letters.to_lowercase();
     let target_len = letters.chars().count();
 
-    let anagrams = if has_wildcard(letters) {
+    let anagrams = if lower.contains('*') {
+        // Non-positional: letters must appear somewhere in the word; * and ? are free slots.
+        let required: Vec<char> = lower.chars().filter(|&c| c != '?' && c != '*').collect();
         content
             .lines()
             .filter(|word| {
                 word.chars().count() == target_len
-                    && matches_pattern(&word.to_lowercase(), &lower)
+                    && matches_nonpositional(&word.to_lowercase(), &required)
+            })
+            .map(str::to_owned)
+            .collect()
+    } else if lower.contains('?') {
+        // Positional: each character must match its exact position; ? accepts any char.
+        content
+            .lines()
+            .filter(|word| {
+                word.chars().count() == target_len
+                    && matches_positional(&word.to_lowercase(), &lower)
             })
             .map(str::to_owned)
             .collect()
     } else {
+        // Pure anagram: sorted character keys must match.
         let key = sorted_chars(&lower);
         content
             .lines()
