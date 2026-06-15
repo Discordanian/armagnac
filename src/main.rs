@@ -7,7 +7,7 @@ use terminal_size::{terminal_size, Width};
 
 /// Command-line anagram solver
 #[derive(Parser, Debug)]
-#[command(author, version, about)]
+#[command(version, about)]
 struct Args {
     /// The letters to find anagrams for
     letters: String,
