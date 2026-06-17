@@ -104,7 +104,7 @@ isle  lens  lent  lest  lien  line  lint  list  lite  sine  site  silt  tile  ti
 
 armagnac looks for a system dictionary in the following locations, in order:
 
-1. `/usr/share/dict/words` (macOS, most Linux distros)
+1. `/usr/share/dict/words`
 2. `/usr/local/share/dict/words`
 3. `/usr/dict/words`
 4. `/usr/local/dict/words`
