@@ -70,22 +70,29 @@ fn is_submultiset(word: &str, base: &[char]) -> bool {
     true
 }
 
-/// Positional match: `?` accepts any char at that position; letters must match exactly.
+/// Positional match: each `?` marks the slot where a wild (new) character must appear.
+/// The fixed characters may occupy the non-`?` slots in any order.
 fn matches_positional(word: &str, pattern: &str) -> bool {
-    let mut wc = word.chars();
-    let mut pc = pattern.chars();
-    loop {
-        match (wc.next(), pc.next()) {
-            (Some(_), Some('?')) => {}
-            (Some(w), Some(p)) => {
-                if w != p {
-                    return false;
-                }
-            }
-            (None, None) => return true,
-            _ => return false,
-        }
+    let word_chars: Vec<char> = word.chars().collect();
+    let pattern_chars: Vec<char> = pattern.chars().collect();
+
+    if word_chars.len() != pattern_chars.len() {
+        return false;
     }
+
+    // The chars at non-`?` positions in the word must be an anagram of the fixed chars.
+    let mut fixed: Vec<char> = pattern_chars.iter().filter(|&&c| c != '?').copied().collect();
+    let mut word_fixed: Vec<char> = word_chars
+        .iter()
+        .zip(pattern_chars.iter())
+        .filter(|&(_, p)| *p != '?')
+        .map(|(&w, _)| w)
+        .collect();
+
+    fixed.sort_unstable();
+    word_fixed.sort_unstable();
+
+    word_fixed == fixed
 }
 
 /// Non-positional match: the word must contain every required char (multiset).
