@@ -114,3 +114,5 @@ Use `-d` / `--dictionary` to supply your own word list. The file must contain on
 If no dictionary can be found, the program exits with an error message.
 
 
+# DELETE THIS
+Delete this later, but right now I'm checking in code from a high speed train in Spain.
