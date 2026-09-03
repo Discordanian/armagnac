@@ -112,7 +112,3 @@ armagnac looks for a system dictionary in the following locations, in order:
 Use `-d` / `--dictionary` to supply your own word list. The file must contain one word per line.
 
 If no dictionary can be found, the program exits with an error message.
-
-
-# DELETE THIS
-Delete this later, but right now I'm checking in code from a high speed train in Spain.
